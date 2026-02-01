@@ -121,6 +121,7 @@ class Brain:
         
         if storage == "auto":
             if POSTGRES_AVAILABLE and self._try_postgres():
+                self._setup_postgres()
                 self._storage = "postgresql"
             else:
                 self._setup_sqlite()
@@ -283,9 +284,9 @@ class Brain:
                     VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                     ON CONFLICT (id) DO NOTHING""",
                     (memory.id, memory.agent_id, memory.memory_type, memory.key, memory.content,
-                     memory.content_encrypted, memory.summary, json.dumps(memory.keywords),
+                     memory.content_encrypted, memory.summary, memory.keywords,
                      memory.importance, memory.linked_to, memory.source,
-                     json.dumps(memory.embedding) if memory.embedding else None,
+                     psycopg2.extras.Json(memory.embedding) if memory.embedding else None,
                      memory.created_at, memory.updated_at))
         return memory
     
@@ -304,18 +305,31 @@ class Brain:
             if self._storage == "sqlite":
                 cursor.execute(f"SELECT * FROM memories WHERE {where} ORDER BY importance DESC, created_at DESC LIMIT {limit_param}", tuple(params))
             else:
-                cursor.execute(f"SELECT * FROM memories WHERE {where} ORDER BY importance DESC, created_at DESC LIMIT %s", tuple(params))
+                if params:
+                    cursor.execute(f"SELECT * FROM memories WHERE {where} ORDER BY importance DESC, created_at DESC LIMIT %s", tuple(params + [limit]))
+                else:
+                    cursor.execute(f"SELECT * FROM memories WHERE {where} ORDER BY importance DESC, created_at DESC LIMIT %s", (limit,))
             
             rows = cursor.fetchall()
         return [self._row_to_memory(row) for row in rows]
     
     def _row_to_memory(self, row) -> Memory:
+        # Handle keywords - can be list (PostgreSQL) or string (SQLite)
+        keywords = row["keywords"]
+        if isinstance(keywords, str):
+            keywords = json.loads(keywords) if keywords else []
+        
+        # Handle embedding - can be list (PostgreSQL JSON) or string (SQLite)
+        embedding = row["embedding"]
+        if isinstance(embedding, str):
+            embedding = json.loads(embedding) if embedding else None
+        
         return Memory(
             id=row["id"], agent_id=row["agent_id"], memory_type=row["memory_type"],
             key=row["key"], content=row["content"], content_encrypted=bool(row["content_encrypted"]),
-            summary=row["summary"], keywords=json.loads(row["keywords"] or "[]"),
+            summary=row["summary"], keywords=keywords,
             importance=row["importance"], linked_to=row["linked_to"], source=row["source"],
-            embedding=json.loads(row["embedding"] or "[]") if row["embedding"] else None,
+            embedding=embedding,
             created_at=row["created_at"], updated_at=row["updated_at"]
         )
     
@@ -373,19 +387,27 @@ class Brain:
             row = cursor.fetchone()
         
         if row:
+            # Helper to parse JSON fields that might be dict/list already (PostgreSQL) or string (SQLite)
+            def parse_json(val, default):
+                if val is None:
+                    return default
+                if isinstance(val, str):
+                    return json.loads(val) if val else default
+                return val
+            
             return UserProfile(
                 user_id=row["user_id"], name=row["name"], nickname=row["nickname"],
                 preferred_name=row["preferred_name"],
-                communication_preferences=json.loads(row["communication_preferences"] or "{}"),
-                interests=json.loads(row["interests"] or "[]"),
-                expertise_areas=json.loads(row["expertise_areas"] or "[]"),
-                learning_topics=json.loads(row["learning_topics"] or "[]"),
+                communication_preferences=parse_json(row["communication_preferences"], {}),
+                interests=parse_json(row["interests"], []),
+                expertise_areas=parse_json(row["expertise_areas"], []),
+                learning_topics=parse_json(row["learning_topics"], []),
                 timezone=row["timezone"],
-                active_hours=json.loads(row["active_hours"] or "{}"),
-                conversation_patterns=json.loads(row["conversation_patterns"] or "{}"),
-                emotional_patterns=json.loads(row["emotional_patterns"] or "{}"),
-                important_dates=json.loads(row["important_dates"] or "{}"),
-                life_context=json.loads(row["life_context"] or "{}"),
+                active_hours=parse_json(row["active_hours"], {}),
+                conversation_patterns=parse_json(row["conversation_patterns"], {}),
+                emotional_patterns=parse_json(row["emotional_patterns"], {}),
+                important_dates=parse_json(row["important_dates"], {}),
+                life_context=parse_json(row["life_context"], {}),
                 total_interactions=row["total_interactions"] or 0,
                 first_interaction=row["first_interaction"],
                 last_interaction=row["last_interaction"],
@@ -438,11 +460,11 @@ class Brain:
                         total_interactions = user_profiles.total_interactions + 1,
                         last_interaction = EXCLUDED.last_interaction""",
                     (profile.user_id, profile.name, profile.nickname, profile.preferred_name,
-                     json.dumps(profile.communication_preferences), json.dumps(profile.interests),
-                     json.dumps(profile.expertise_areas), json.dumps(profile.learning_topics),
-                     profile.timezone, json.dumps(profile.active_hours),
-                     json.dumps(profile.conversation_patterns), json.dumps(profile.emotional_patterns),
-                     json.dumps(profile.important_dates), json.dumps(profile.life_context),
+                     psycopg2.extras.Json(profile.communication_preferences), profile.interests,
+                     profile.expertise_areas, profile.learning_topics,
+                     profile.timezone, psycopg2.extras.Json(profile.active_hours),
+                     psycopg2.extras.Json(profile.conversation_patterns), psycopg2.extras.Json(profile.emotional_patterns),
+                     psycopg2.extras.Json(profile.important_dates), psycopg2.extras.Json(profile.life_context),
                      profile.total_interactions, profile.first_interaction, profile.last_interaction,
                      profile.updated_at))
     
@@ -569,7 +591,7 @@ class Brain:
                 "backup_dir": self._backup_dir.exists()}
     
     def close(self):
-        if self._sqlite_conn:
+        if hasattr(self, '_sqlite_conn') and self._sqlite_conn:
             self._sqlite_conn.close()
         if self._pg_conn:
             self._pg_conn.close()
