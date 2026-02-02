@@ -152,7 +152,7 @@ brain = Brain()
 ```python
 context = brain.get_full_context(
     session_key="telegram_12345",  # Unique session ID
-    user_id="pranab",              # User identifier
+    user_id="username",              # User identifier
     agent_id="jarvis",             # Bot identifier
     message="Hey, how's it going?" # Current message
 )
