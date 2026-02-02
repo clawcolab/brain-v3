@@ -1,7 +1,7 @@
 ---
 name: clawbrain
 description: "Claw Brain - Personal AI Memory System for ClawDBot. Provides memory, personality, bonding, and learning capabilities."
-metadata: {"clawdbot":{"emoji":"🧠","requires":{"files":["brain_v3.py"]},"install":[{"id":"git","kind":"git","url":"https://github.com/clawcolab/clawbrain.git","label":"Install Claw Brain (git)"}]}}
+metadata: {"clawdbot":{"emoji":"🧠","requires":{"files":["clawbrain.py"]},"install":[{"id":"git","kind":"git","url":"https://github.com/clawcolab/clawbrain.git","label":"Install Claw Brain (git)"}]}}
 ---
 
 # Claw Brain Skill 🧠
@@ -29,7 +29,7 @@ git clone https://github.com/clawcolab/clawbrain.git
 import sys
 sys.path.insert(0, "clawbrain")
 
-from brain import Brain
+from clawbrain import Brain
 
 # Initialize (uses PostgreSQL + Redis, falls back to SQLite)
 brain = Brain()
@@ -41,18 +41,11 @@ context = brain.get_full_context(
     agent_id="jarvis",
     message="Hey, how's it going?"
 )
-
-# Returns:
-# - User profile (name, preferences, interests)
-# - Current mood (happy, neutral, frustrated...)
-# - Detected intent (question, command, casual...)
-# - Recent memories
-# - Response guidance
 ```
 
 ## Files
 
-- `brain_v3.py` - Main Brain class
+- `clawbrain.py` - Main Brain class
 - `__init__.py` - Exports and skill registration
 
 ## Storage Backends

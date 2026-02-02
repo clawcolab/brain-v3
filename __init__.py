@@ -10,7 +10,7 @@ __version__ = "3.0.0"
 __author__ = "ClawColab"
 
 # Core exports
-from brain_v3 import (
+from clawbrain import (
     Brain,
     Memory,
     UserProfile,

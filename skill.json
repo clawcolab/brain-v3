@@ -15,7 +15,7 @@
     ]
   },
   "requires": {
-    "files": ["brain_v3.py"]
+    "files": ["clawbrain.py"]
   },
   "metadata": {
     "clawdbot": {
