@@ -84,28 +84,9 @@ fi
 # Check for sentence-transformers (optional)
 if ! python3 -c "import sentence_transformers" 2>/dev/null; then
     echo "   ℹ️  sentence-transformers not installed (semantic search disabled)"
-    echo "   Run: pip3 install sentence-transformers"
 fi
 
-# Environment variable setup
-echo ""
-echo "🔧 Environment Configuration"
-echo "----------------------------"
-echo "Add these to your systemd service config:"
-echo ""
-echo "  sudo mkdir -p /etc/systemd/system/${SERVICE_NAME}.service.d"
-echo "  sudo tee /etc/systemd/system/${SERVICE_NAME}.service.d/brain.conf << EOF"
-echo "[Service]"
-echo "Environment=\"BRAIN_AGENT_ID=your-agent-name\""
-echo "# Optional: PostgreSQL config"
-echo "# Environment=\"BRAIN_POSTGRES_HOST=localhost\""
-echo "# Environment=\"BRAIN_POSTGRES_PASSWORD=your-password\""
-echo "# Optional: Redis config"
-echo "# Environment=\"BRAIN_REDIS_HOST=localhost\""
-echo "EOF"
-echo ""
-echo "  sudo systemctl daemon-reload"
-echo "  sudo systemctl restart $SERVICE_NAME"
+echo "   All dependencies are optional - SQLite works out of the box!"
 
 # Test the installation
 echo ""
@@ -119,7 +100,12 @@ fi
 echo ""
 echo "✅ Installation complete!"
 echo ""
-echo "📝 Next steps:"
-echo "   1. Set BRAIN_AGENT_ID environment variable (see above)"
-echo "   2. Restart the $SERVICE_NAME service"
-echo "   3. Check logs: journalctl -u $SERVICE_NAME -f | grep brain"
+echo "🎉 ClawBrain is ready to use! Just restart your service:"
+echo "   sudo systemctl restart $SERVICE_NAME"
+echo ""
+echo "📋 Optional Configuration (most users don't need this):"
+echo "   • BRAIN_AGENT_ID - Custom agent name (default: 'default')"
+echo "   • BRAIN_POSTGRES_HOST - Use PostgreSQL instead of SQLite"
+echo "   • BRAIN_REDIS_HOST - Enable Redis caching"
+echo ""
+echo "   To set these, create: /etc/systemd/system/${SERVICE_NAME}.service.d/brain.conf"
