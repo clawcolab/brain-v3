@@ -28,54 +28,12 @@ function findSkillsDir() {
   return possiblePaths[0];
 }
 
-// Find the clawd workspace directory (where IDENTITY.md lives)
-function findClawdDir() {
-  const home = os.homedir();
-  const possiblePaths = [
-    path.join(home, 'clawd'),           // Standard location
-    path.join(home, '.openclaw'),       // OpenClaw location
-    path.join(home, '.clawdbot'),       // ClawdBot alt
-  ];
-  
-  for (const p of possiblePaths) {
-    if (fs.existsSync(path.join(p, 'IDENTITY.md'))) {
-      return p;
-    }
-  }
-  return possiblePaths[0];
-}
-
-// Detect agent name from IDENTITY.md or environment
-function detectAgentName() {
-  // First check environment variable
-  if (process.env.BRAIN_AGENT_ID) {
-    return process.env.BRAIN_AGENT_ID;
-  }
-  
-  // Try to parse IDENTITY.md for the agent name
-  const clawdDir = findClawdDir();
-  const identityPath = path.join(clawdDir, 'IDENTITY.md');
-  
-  try {
-    if (fs.existsSync(identityPath)) {
-      const content = fs.readFileSync(identityPath, 'utf-8');
-      // Look for "**Name:** AgentName" pattern
-      const nameMatch = content.match(/\*\*Name:\*\*\s*(\w+)/i);
-      if (nameMatch) {
-        return nameMatch[1].toLowerCase();
-      }
-    }
-  } catch (err) {
-    console.warn('[clawbrain-hook] Could not read IDENTITY.md:', err.message);
-  }
-  
-  // Default fallback
-  return 'main';
-}
-
 const SKILLS_DIR = findSkillsDir();
 const BRIDGE_SCRIPT = path.join(SKILLS_DIR, 'scripts', 'brain_bridge.py');
-const AGENT_ID = detectAgentName();
+
+// Agent ID from environment variable, defaults to "default"
+// Set BRAIN_AGENT_ID in your service config for per-instance storage
+const AGENT_ID = process.env.BRAIN_AGENT_ID || 'default';
 
 /**
  * Execute a brain bridge command
