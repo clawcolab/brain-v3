@@ -693,13 +693,21 @@ class Brain:
         if isinstance(embedding, str):
             embedding = json.loads(embedding) if embedding else None
 
+        # Handle datetime - PostgreSQL returns datetime objects, SQLite returns strings
+        created_at = row["created_at"]
+        if hasattr(created_at, 'isoformat'):
+            created_at = created_at.isoformat()
+        updated_at = row["updated_at"]
+        if hasattr(updated_at, 'isoformat'):
+            updated_at = updated_at.isoformat()
+
         return Memory(
             id=row["id"], agent_id=row["agent_id"], memory_type=row["memory_type"],
             key=row["key"], content=row["content"], content_encrypted=bool(row["content_encrypted"]),
             summary=row["summary"], keywords=keywords, tags=tags,
             importance=row["importance"], linked_to=row["linked_to"], source=row["source"],
             embedding=embedding,
-            created_at=row["created_at"], updated_at=row["updated_at"]
+            created_at=created_at, updated_at=updated_at
         )
     
     # ========== CONVERSATIONS ==========
@@ -764,6 +772,14 @@ class Brain:
                     return json.loads(val) if val else default
                 return val
             
+            # Helper to convert datetime to string
+            def to_isoformat(val):
+                if val is None:
+                    return None
+                if hasattr(val, 'isoformat'):
+                    return val.isoformat()
+                return val
+            
             return UserProfile(
                 user_id=row["user_id"], name=row["name"], nickname=row["nickname"],
                 preferred_name=row["preferred_name"],
@@ -778,9 +794,9 @@ class Brain:
                 important_dates=parse_json(row["important_dates"], {}),
                 life_context=parse_json(row["life_context"], {}),
                 total_interactions=row["total_interactions"] or 0,
-                first_interaction=row["first_interaction"],
-                last_interaction=row["last_interaction"],
-                updated_at=row["updated_at"]
+                first_interaction=to_isoformat(row["first_interaction"]),
+                last_interaction=to_isoformat(row["last_interaction"]),
+                updated_at=to_isoformat(row["updated_at"])
             )
         return UserProfile(user_id=user_id)
     
