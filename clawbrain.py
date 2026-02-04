@@ -92,19 +92,19 @@ class UserProfile:
 
 
 DEFAULT_CONFIG = {
-    "storage_backend": "auto",  # "sqlite", "postgresql", "auto"
-    "sqlite_path": "./brain_data.db",
-    "postgres_host": "localhost",
-    "postgres_port": 5432,
-    "postgres_db": "brain_db",
-    "postgres_user": "brain_user",
-    "postgres_password": "",
-    "redis_host": "localhost",
-    "redis_port": 6379,
-    "redis_db": 0,
-    "redis_prefix": "brain:",
-    "embedding_model": "all-MiniLM-L6-v2",
-    "backup_dir": "./brain_backups",
+    "storage_backend": os.environ.get("BRAIN_STORAGE", "auto"),  # "sqlite", "postgresql", "auto"
+    "sqlite_path": os.environ.get("BRAIN_SQLITE_PATH", "./brain_data.db"),
+    "postgres_host": os.environ.get("BRAIN_POSTGRES_HOST", "localhost"),
+    "postgres_port": int(os.environ.get("BRAIN_POSTGRES_PORT", "5432")),
+    "postgres_db": os.environ.get("BRAIN_POSTGRES_DB", "brain_db"),
+    "postgres_user": os.environ.get("BRAIN_POSTGRES_USER", "brain_user"),
+    "postgres_password": os.environ.get("BRAIN_POSTGRES_PASSWORD", ""),
+    "redis_host": os.environ.get("BRAIN_REDIS_HOST", "localhost"),
+    "redis_port": int(os.environ.get("BRAIN_REDIS_PORT", "6379")),
+    "redis_db": int(os.environ.get("BRAIN_REDIS_DB", "0")),
+    "redis_prefix": os.environ.get("BRAIN_REDIS_PREFIX", "brain:"),
+    "embedding_model": os.environ.get("BRAIN_EMBEDDING_MODEL", "all-MiniLM-L6-v2"),
+    "backup_dir": os.environ.get("BRAIN_BACKUP_DIR", "./brain_backups"),
 }
 
 
